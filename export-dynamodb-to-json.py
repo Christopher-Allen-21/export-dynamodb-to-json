@@ -1,6 +1,8 @@
 import json
 import boto3
 import logging
+from boto3.dynamodb.conditions import Key
+from datetime import datetime
 
 
 MOVIE_TABLE = 'movies'
@@ -20,13 +22,27 @@ movie_table = dynamodb.Table(MOVIE_TABLE)
 tv_show_table = dynamodb.Table(TV_SHOW_TABLE)
 episode_table = dynamodb.Table(EPISODE_TABLE)
 
+current_timestamp = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
+
 
 def lambda_handler(event, context):
-    movie_records = get_all_dynamo_records(movie_table)['Items']
-    format_movie_data(movie_records)
+    movie_records = get_all_dynamo_records(movie_table)
+    tv_show_records = get_all_dynamo_records(tv_show_table)
 
+    movies = format_movie_data(movie_records)
+    tv_shows = format_tv_show_data(tv_show_records)
 
+    combined_data = {
+        "TV Shows": tv_shows,
+        "Movies": movies,
+    }
 
+    path = "exported_contentFeed.json"
+    s3.put_object(
+        Body=json.dumps(combined_data),
+        Bucket=S3_BUCKET,
+        Key=path
+    )
 
 
 def format_movie_data(movie_dynamo_data):
@@ -56,14 +72,89 @@ def format_movie_data(movie_dynamo_data):
         }
 
         formatted_movie_list.append(formatted_movie)
-        print(formatted_movie_list[0])
-        return formatted_movie_list
+
+    return formatted_movie_list
+
+
+def format_tv_show_data(tv_show_dynamo_data):
+    formatted_tv_show_list = []
+
+    for tv_show in tv_show_dynamo_data:
+        formatted_tv_show = {
+			"title": tv_show["name"],
+			"shortDescription": tv_show["description"],
+			"thumbnail": tv_show["thumbnailUrl"],
+			"releaseDate": tv_show["releaseDate"],
+			"rating": tv_show["rating"],
+			"cast": tv_show["cast"],
+			"director": tv_show["director"],
+			"genres": tv_show["genres"],
+            "dateAdded": tv_show["dateAdded"],
+            "lastWatched": tv_show["lastWatched"] if tv_show["lastWatched"] else "",
+            "views": int(tv_show["views"]),
+			"seasons": format_episode_data(tv_show["name"], tv_show["numberOfSeasons"])
+		}
+
+        formatted_tv_show_list.append(formatted_tv_show)
+
+    return formatted_tv_show_list
+
+
+def format_episode_data(tv_show_name, number_of_seasons):
+    formatted_seasons = []
+
+    for i in range(int(number_of_seasons)):
+        formatted_episodes = []
+        sk = i + 1
+
+        episodes = get_dynamo_records_by_pk_and_partial_sk("tvShowName", tv_show_name, 'seasonAndEpisode', 'S'+str(sk), episode_table)
+        for episode in episodes:
+            formatted_episode = {
+                "title": episode["name"],
+                "episodeNumber": int(episode["episode"]),
+                "longDescription": episode["description"],
+                "thumbnail": episode["thumbnailUrl"],
+                "releaseDate": episode["releaseDate"],
+                "rating": episode["rating"],
+                "cast": episode["cast"],
+                "director": episode["director"],
+                "content": {
+                    "videos": [{
+                        "videoType": episode["videoType"],
+                        "url": episode["videoUrl"],
+                    }],
+                    "duration": int(episode["duration"]),
+                },
+                "genres": episode["genres"],
+                "dateAdded": episode["dateAdded"],
+                "lastWatched": episode["lastWatched"] if episode["lastWatched"] else "",
+                "views": int(episode["views"])
+            }
+
+            formatted_episodes.append(formatted_episode)
+        
+        season = {
+            "title": str(i + 1),
+            "episodes": formatted_episodes
+        }
+
+        formatted_seasons.append(season)
+
+    return formatted_seasons
 
 
 def get_all_dynamo_records(table):
     try:
         records = table.scan()
-        return records
+        return records["Items"]
     except Exception as ex:
         logger.error(f"Error retrieving all records from table {table}. Exception: {ex}")
         raise
+
+
+def get_dynamo_records_by_pk_and_partial_sk(pk_name, pk_value, sk_name, sk_value, table):
+    # print(f"pk Name: {pk_name}, pk Value: {pk_value}, sk Name: {sk_name}, sk Value: {sk_value}, table: {table}")
+    try:
+        return table.query(KeyConditionExpression=Key(pk_name).eq(pk_value) & Key(sk_name).begins_with(sk_value))["Items"]
+    except Exception as ex:
+        logger.error(f"Error retrieving records with primary key {pk_value} and sort key {sk_value} from table {table}. Exception: {ex}")
