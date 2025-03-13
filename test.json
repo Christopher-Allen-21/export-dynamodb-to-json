@@ -1,0 +1,26 @@
+{
+    "title": "Excalibur",
+    "longDescription": "Merlin the magician helps Arthur Pendragon unite the Britons around the Round Table of Camelot, even as dark forces conspire to tear it apart.",
+    "thumbnail": "https: //video-content-bucket-1.s3.amazonaws.com/thumbNails/excalibur.jpg",
+    "releaseDate": "1981",
+    "rating": "PG",
+    "cast": "Nigel Terry, Helen Mirren, Nicholas Clay, Cherie Lunghi, Paul Geoffrey",
+    "director": "John Boorman",
+    "genres": [
+        "All",
+        "Fantasy"
+    ],
+    "content": {
+        "duration": Decimal("8400"),
+        "videos": [
+            {
+                "videoType": "mp4",
+                "url": "https://video-content-bucket-1.s3.amazonaws.com/movies/Excalibur.mp4"
+            }
+        ]
+    },
+    "trailerUrl": None,
+    "dateAdded": "2025-03-10",
+    "lastWatched": None,
+    "views": Decimal("0")
+}
