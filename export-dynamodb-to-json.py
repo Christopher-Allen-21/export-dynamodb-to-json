@@ -52,11 +52,11 @@ def format_movie_data(movie_dynamo_data):
     formatted_movie_list = []
 
     formatted_movie_list_length = len(movie_dynamo_data)
-    cutoff = formatted_movie_list_length - 15
+    cutoff = formatted_movie_list_length - 10
 
     for i, movie in enumerate(movie_dynamo_data):
 
-        if i >= cutoff:
+        if i < cutoff:
             formatted_movie = {
                 "title": movie["name"],
                 "longDescription": movie["description"],
