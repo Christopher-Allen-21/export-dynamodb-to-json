@@ -40,7 +40,7 @@ def lambda_handler(event, context):
         "Movies": movies,
     }
 
-    path = "exported_contentFeed.json"
+    path = "contentFeed_exported.json"
     s3.put_object(
         Body=json.dumps(combined_data),
         Bucket=S3_BUCKET,
