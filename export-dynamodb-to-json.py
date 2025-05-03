@@ -51,28 +51,59 @@ def lambda_handler(event, context):
 def format_movie_data(movie_dynamo_data):
     formatted_movie_list = []
 
-    for movie in movie_dynamo_data:
-        formatted_movie = {
-            "title": movie["name"],
-			"longDescription": movie["description"],
-			"thumbnail": movie["thumbnailUrl"],
-			"releaseDate": movie["year"],
-			"rating": movie["rating"],
-			"cast": movie["cast"],
-			"director": movie["director"],
-			"genres": movie["genres"],
-			"content": {
-				"duration": int(movie["duration"]),
-				"videos": [{
-					"videoType": movie["videoType"],
-					"url": movie["videoUrl"],
-				}]
-			},
-            "trailerUrl": movie["trailerUrl"] if movie["trailerUrl"] else "",
-            "dateAdded": movie["dateAdded"],
-            "lastWatched": movie["lastWatched"] if movie["lastWatched"] else "",
-            "views": int(movie["views"])
-        }
+    formatted_movie_list_length = len(movie_dynamo_data)
+    cutoff = formatted_movie_list_length - 15
+
+    for i, movie in enumerate(movie_dynamo_data):
+
+        if i >= cutoff:
+            formatted_movie = {
+                "title": movie["name"],
+                "longDescription": movie["description"],
+                "thumbnail": movie["thumbnailUrl"],
+                "releaseDate": movie["year"],
+                "rating": movie["rating"],
+                "cast": movie["cast"],
+                "director": movie["director"],
+                "genres": movie["genres"],
+                "content": {
+                    "duration": int(movie["duration"]),
+                    "videos": [{
+                        "videoType": movie["videoType"],
+                        "url": movie["videoUrl"],
+                    }]
+                },
+                "trailerUrl": movie["trailerUrl"] if movie["trailerUrl"] else "",
+                "dateAdded": movie["dateAdded"],
+                "lastWatched": movie["lastWatched"] if movie["lastWatched"] else "",
+                "views": int(movie["views"])
+            }
+        else:
+            # Make copy of list in order to append
+            genres = movie["genres"][:]
+            genres.append("Recently Added")
+
+            formatted_movie = {
+                "title": movie["name"],
+                "longDescription": movie["description"],
+                "thumbnail": movie["thumbnailUrl"],
+                "releaseDate": movie["year"],
+                "rating": movie["rating"],
+                "cast": movie["cast"],
+                "director": movie["director"],
+                "genres": genres,
+                "content": {
+                    "duration": int(movie["duration"]),
+                    "videos": [{
+                        "videoType": movie["videoType"],
+                        "url": movie["videoUrl"],
+                    }]
+                },
+                "trailerUrl": movie["trailerUrl"] if movie["trailerUrl"] else "",
+                "dateAdded": movie["dateAdded"],
+                "lastWatched": movie["lastWatched"] if movie["lastWatched"] else "",
+                "views": int(movie["views"])
+            }
 
         formatted_movie_list.append(formatted_movie)
 
