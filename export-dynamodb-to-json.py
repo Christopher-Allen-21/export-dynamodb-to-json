@@ -27,10 +27,13 @@ current_timestamp = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
 
 def lambda_handler(event, context):
     movie_records = get_all_dynamo_records(movie_table)
-    tv_show_records = get_all_dynamo_records(tv_show_table)
+    sorted_movie_records = sorted(movie_records, key=lambda x: x['dateAdded'])
 
-    movies = format_movie_data(movie_records)
-    tv_shows = format_tv_show_data(tv_show_records)
+    tv_show_records = get_all_dynamo_records(tv_show_table)
+    sorted_tv_show_records = sorted(tv_show_records, key=lambda x: x['dateAdded'])
+
+    movies = format_movie_data(sorted_movie_records)
+    tv_shows = format_tv_show_data(sorted_tv_show_records)
 
     combined_data = {
         "TV Shows": tv_shows,
