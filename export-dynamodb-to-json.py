@@ -142,7 +142,8 @@ def format_episode_data(tv_show_name, number_of_seasons):
         sk = i + 1
 
         episodes = get_dynamo_records_by_pk_and_partial_sk("tvShowName", tv_show_name, 'seasonAndEpisode', 'S'+str(sk), episode_table)
-        for episode in episodes:
+        sorted_episodes = sorted(episodes, key=lambda x: int(x['episode']))
+        for episode in sorted_episodes:
             formatted_episode = {
                 "title": episode["name"],
                 "episodeNumber": int(episode["episode"]),
