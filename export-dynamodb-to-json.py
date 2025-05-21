@@ -1,6 +1,5 @@
 import json
 import boto3
-import logging
 from boto3.dynamodb.conditions import Key
 from datetime import datetime
 
@@ -12,10 +11,6 @@ EPISODE_TABLE = 'episodes'
 S3_BUCKET = 'video-content-bucket-1'
 JSON_FILE = 'contentFeed.json'
 
-
-logging.basicConfig(level = logging.INFO)
-logger = logging.getLogger()
-
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 movie_table = dynamodb.Table(MOVIE_TABLE)
@@ -26,6 +21,8 @@ current_timestamp = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
 
 
 def lambda_handler(event, context):
+    print("Export started.")
+
     movie_records = get_all_dynamo_records(movie_table)
     sorted_movie_records = sorted(movie_records, key=lambda x: x['dateAdded'])
 
@@ -46,6 +43,8 @@ def lambda_handler(event, context):
         Bucket=S3_BUCKET,
         Key=path
     )
+
+    print("Export completed.")
 
 
 def format_movie_data(movie_dynamo_data):
@@ -107,6 +106,7 @@ def format_movie_data(movie_dynamo_data):
 
         formatted_movie_list.append(formatted_movie)
 
+    print("Movie formatting completed.")   
     return formatted_movie_list
 
 
@@ -131,6 +131,7 @@ def format_tv_show_data(tv_show_dynamo_data):
 
         formatted_tv_show_list.append(formatted_tv_show)
 
+    print("TV Show formatting completed.")   
     return formatted_tv_show_list
 
 
@@ -183,7 +184,7 @@ def get_all_dynamo_records(table):
         records = table.scan()
         return records["Items"]
     except Exception as ex:
-        logger.error(f"Error retrieving all records from table {table}. Exception: {ex}")
+        print(f"Error retrieving all records from table {table}. Exception: {ex}")
         raise
 
 
@@ -192,4 +193,4 @@ def get_dynamo_records_by_pk_and_partial_sk(pk_name, pk_value, sk_name, sk_value
     try:
         return table.query(KeyConditionExpression=Key(pk_name).eq(pk_value) & Key(sk_name).begins_with(sk_value))["Items"]
     except Exception as ex:
-        logger.error(f"Error retrieving records with primary key {pk_value} and sort key {sk_value} from table {table}. Exception: {ex}")
+        print(f"Error retrieving records with primary key {pk_value} and sort key {sk_value} from table {table}. Exception: {ex}")
