@@ -54,6 +54,7 @@ def lambda_handler(event, context):
 
 
 def format_movie_data(movie_dynamo_data):
+    print("Movie formatting started.")  
     formatted_movie_list = []
 
     formatted_movie_list_length = len(movie_dynamo_data)
@@ -117,6 +118,7 @@ def format_movie_data(movie_dynamo_data):
 
 
 def format_tv_show_data(tv_show_dynamo_data):
+    print("TV Show formatting started.")   
     formatted_tv_show_list = []
 
     for tv_show in tv_show_dynamo_data:
@@ -142,23 +144,21 @@ def format_tv_show_data(tv_show_dynamo_data):
 
 
 def format_episode_data(tv_show_name, number_of_seasons):
-    # needs to be able to handle "Movies", "Extras", "Mini Series"
-
     formatted_seasons = []
     number_of_normal_seasons = number_of_seasons
     movies_season = None
     extras_season = None
 
-    # Mini Series will be first season 
-    if special_season_exists(tv_show_name, SpecialSeason.MINI_SERIES):
-        season = get_special_season_episodes(tv_show_name, SpecialSeason.MINI_SERIES)
-        formatted_seasons.append(season)
+    # Mini Series should be before normal seasons
+    if special_season_exists(tv_show_name, SpecialSeason.MINI_SERIES.value):
+        mini_series_season = get_special_season_episodes(tv_show_name, SpecialSeason.MINI_SERIES.value)
+        formatted_seasons.append(mini_series_season)
         number_of_normal_seasons = number_of_normal_seasons - 1
-    elif special_season_exists(tv_show_name, SpecialSeason.MOVIES):
-        movies_season = get_special_season_episodes(tv_show_name, SpecialSeason.MINI_SERIES)
+    elif special_season_exists(tv_show_name, SpecialSeason.MOVIES.value):
+        movies_season = get_special_season_episodes(tv_show_name, SpecialSeason.MOVIES.value)
         number_of_normal_seasons = number_of_normal_seasons - 1
-    elif special_season_exists(tv_show_name, SpecialSeason.EXTRAS):
-        extras_season = get_special_season_episodes(tv_show_name, SpecialSeason.EXTRAS)
+    elif special_season_exists(tv_show_name, SpecialSeason.EXTRAS.value):
+        extras_season = get_special_season_episodes(tv_show_name, SpecialSeason.EXTRAS.value)
         number_of_normal_seasons = number_of_normal_seasons - 1
 
 
@@ -202,7 +202,7 @@ def format_episode_data(tv_show_name, number_of_seasons):
 
         formatted_seasons.append(season)
     
-
+    # Movies and Extras Seasons should be after normal seasons
     if movies_season:
         formatted_seasons.append(movies_season)
     if extras_season:
@@ -212,9 +212,6 @@ def format_episode_data(tv_show_name, number_of_seasons):
 
 
 def get_special_season_episodes(tv_show_name, special_season_type):
-    print("PENIS")
-    print(special_season_type)
-    print(SpecialSeason.MOVIES)
     formatted_episodes = []
 
     episodes = get_dynamo_records_by_pk_and_partial_sk("tvShowName", tv_show_name, 'seasonAndEpisode', special_season_type, episode_table)
@@ -255,13 +252,6 @@ def special_season_exists(tv_show_name, special_season_type):
     response = get_dynamo_records_by_pk_and_partial_sk("tvShowName", tv_show_name, 'seasonAndEpisode', special_season_type, episode_table)
     
     if response != None and len(response) > 0:
-        return True
-    else:
-        return False
-
-
-def season_is_not_movies_extras_or_mini_series(season_name):
-    if season_name != SpecialSeason.MOVIES and season_name != SpecialSeason.EXTRAS and season_name != SpecialSeason.MINI_SERIES:
         return True
     else:
         return False
