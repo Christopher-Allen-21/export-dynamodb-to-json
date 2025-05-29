@@ -2,6 +2,7 @@ import json
 import boto3
 from boto3.dynamodb.conditions import Key
 from datetime import datetime
+from enum import Enum
 
 
 MOVIE_TABLE = 'movies'
@@ -10,6 +11,11 @@ EPISODE_TABLE = 'episodes'
 
 S3_BUCKET = 'video-content-bucket-1'
 JSON_FILE = 'contentFeed.json'
+
+class SpecialSeason(Enum):
+    MINI_SERIES = 'Mini Series'
+    EXTRAS = 'Extras'
+    MOVIES = 'Movies'
 
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
@@ -136,13 +142,33 @@ def format_tv_show_data(tv_show_dynamo_data):
 
 
 def format_episode_data(tv_show_name, number_of_seasons):
-    formatted_seasons = []
+    # needs to be able to handle "Movies", "Extras", "Mini Series"
 
-    for i in range(int(number_of_seasons)):
+    formatted_seasons = []
+    number_of_normal_seasons = number_of_seasons
+    movies_season = None
+    extras_season = None
+
+    # Mini Series will be first season 
+    if special_season_exists(tv_show_name, SpecialSeason.MINI_SERIES):
+        season = get_special_season_episodes(tv_show_name, SpecialSeason.MINI_SERIES)
+        formatted_seasons.append(season)
+        number_of_normal_seasons = number_of_normal_seasons - 1
+    elif special_season_exists(tv_show_name, SpecialSeason.MOVIES):
+        movies_season = get_special_season_episodes(tv_show_name, SpecialSeason.MINI_SERIES)
+        number_of_normal_seasons = number_of_normal_seasons - 1
+    elif special_season_exists(tv_show_name, SpecialSeason.EXTRAS):
+        extras_season = get_special_season_episodes(tv_show_name, SpecialSeason.EXTRAS)
+        number_of_normal_seasons = number_of_normal_seasons - 1
+
+
+    for i in range(int(number_of_normal_seasons)):
         formatted_episodes = []
         sk = i + 1
+        sk_string = f"{sk:02}" # Append leading 0 if necessary
 
-        episodes = get_dynamo_records_by_pk_and_partial_sk("tvShowName", tv_show_name, 'seasonAndEpisode', 'S'+str(sk), episode_table)
+        episodes = get_dynamo_records_by_pk_and_partial_sk("tvShowName", tv_show_name, 'seasonAndEpisode', 'S'+sk_string, episode_table)
+
         sorted_episodes = sorted(episodes, key=lambda x: int(x['episode']))
         for episode in sorted_episodes:
             formatted_episode = {
@@ -175,8 +201,70 @@ def format_episode_data(tv_show_name, number_of_seasons):
         }
 
         formatted_seasons.append(season)
+    
+
+    if movies_season:
+        formatted_seasons.append(movies_season)
+    if extras_season:
+        formatted_seasons.append(extras_season)
 
     return formatted_seasons
+
+
+def get_special_season_episodes(tv_show_name, special_season_type):
+    print("PENIS")
+    print(special_season_type)
+    print(SpecialSeason.MOVIES)
+    formatted_episodes = []
+
+    episodes = get_dynamo_records_by_pk_and_partial_sk("tvShowName", tv_show_name, 'seasonAndEpisode', special_season_type, episode_table)
+    sorted_episodes = sorted(episodes, key=lambda x: int(x['episode']))
+    for episode in sorted_episodes:
+        formatted_episode = {
+            "title": episode["name"],
+            "episodeNumber": int(episode["episode"]),
+            "longDescription": episode["description"],
+            "thumbnail": episode["thumbnailUrl"],
+            "releaseDate": episode["releaseDate"],
+            "rating": episode["rating"],
+            "cast": episode["cast"],
+            "director": episode["director"],
+            "content": {
+                "videos": [{
+                    "videoType": episode["videoType"],
+                    "url": episode["videoUrl"],
+                }],
+                "duration": int(episode["duration"]),
+            },
+            "genres": episode["genres"],
+            "dateAdded": episode["dateAdded"],
+            "lastWatched": episode["lastWatched"] if episode["lastWatched"] else "",
+            "views": int(episode["views"])
+        }
+
+        formatted_episodes.append(formatted_episode)
+
+    season = {
+        "title": special_season_type,
+        "episodes": formatted_episodes
+    }
+    return season
+
+
+def special_season_exists(tv_show_name, special_season_type):
+    response = get_dynamo_records_by_pk_and_partial_sk("tvShowName", tv_show_name, 'seasonAndEpisode', special_season_type, episode_table)
+    
+    if response != None and len(response) > 0:
+        return True
+    else:
+        return False
+
+
+def season_is_not_movies_extras_or_mini_series(season_name):
+    if season_name != SpecialSeason.MOVIES and season_name != SpecialSeason.EXTRAS and season_name != SpecialSeason.MINI_SERIES:
+        return True
+    else:
+        return False
 
 
 def get_all_dynamo_records(table):
