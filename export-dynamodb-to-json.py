@@ -23,8 +23,6 @@ movie_table = dynamodb.Table(MOVIE_TABLE)
 tv_show_table = dynamodb.Table(TV_SHOW_TABLE)
 episode_table = dynamodb.Table(EPISODE_TABLE)
 
-current_timestamp = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
-
 
 def lambda_handler(event, context):
     print("Export started.")
@@ -112,6 +110,13 @@ def format_movie_data(movie_dynamo_data):
             }
 
         formatted_movie_list.append(formatted_movie)
+    
+    # Reverse the last 10 items
+    if len(formatted_movie_list) >= 10:
+        formatted_movie_list = (
+            formatted_movie_list[:-10] +
+            list(reversed(formatted_movie_list[-10:]))
+        )
 
     print("Movie formatting completed.")   
     return formatted_movie_list
