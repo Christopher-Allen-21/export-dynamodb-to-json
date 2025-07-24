@@ -17,6 +17,8 @@ class SpecialSeason(Enum):
     EXTRAS = 'Extras'
     MOVIES = 'Movies'
 
+NUMBER_OF_RECENTLY_ADDED_MOVIES = 10
+
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 movie_table = dynamodb.Table(MOVIE_TABLE)
@@ -56,7 +58,7 @@ def format_movie_data(movie_dynamo_data):
     formatted_movie_list = []
 
     formatted_movie_list_length = len(movie_dynamo_data)
-    cutoff = formatted_movie_list_length - 10
+    cutoff = formatted_movie_list_length - NUMBER_OF_RECENTLY_ADDED_MOVIES
 
     for i, movie in enumerate(movie_dynamo_data):
 
@@ -111,11 +113,11 @@ def format_movie_data(movie_dynamo_data):
 
         formatted_movie_list.append(formatted_movie)
     
-    # Reverse the last 10 items
-    if len(formatted_movie_list) >= 10:
+    # Reverse the last x items
+    if len(formatted_movie_list) >= NUMBER_OF_RECENTLY_ADDED_MOVIES:
         formatted_movie_list = (
-            formatted_movie_list[:-10] +
-            list(reversed(formatted_movie_list[-10:]))
+            formatted_movie_list[:-NUMBER_OF_RECENTLY_ADDED_MOVIES] +
+            list(reversed(formatted_movie_list[-NUMBER_OF_RECENTLY_ADDED_MOVIES:]))
         )
 
     print("Movie formatting completed.")   
@@ -132,6 +134,7 @@ def format_tv_show_data(tv_show_dynamo_data):
 			"shortDescription": tv_show["description"],
 			"thumbnail": tv_show["thumbnailUrl"],
 			"releaseDate": tv_show["releaseDate"],
+            "firstAired": tv_show["firstAired"],
 			"rating": tv_show["rating"],
 			"cast": tv_show["cast"],
 			"director": tv_show["director"],
