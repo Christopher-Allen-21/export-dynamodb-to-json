@@ -48,7 +48,7 @@ episode_table = dynamodb.Table(EPISODE_TABLE)
 def lambda_handler(event, context):
     print("Export started.")
 
-    if EXPORT_ALL_DATA or EXPORT_MOVIE_DATA or EXPORT_DECADES_DATA:
+    if EXPORT_ALL_DATA or EXPORT_MOVIE_DATA:
         movie_records = get_all_dynamo_records(movie_table)
         sorted_movie_records = sorted(movie_records, key=lambda x: x['dateAdded'])
         movies = format_movie_data(sorted_movie_records)
@@ -57,6 +57,11 @@ def lambda_handler(event, context):
         tv_show_records = get_all_dynamo_records(tv_show_table)
         sorted_tv_show_records = sorted(tv_show_records, key=lambda x: x['dateAdded'])
         tv_shows = format_tv_show_data(sorted_tv_show_records)
+
+    if EXPORT_DECADES_DATA:
+        movie_records = get_all_dynamo_records(movie_table)
+        sorted_movie_records = sorted(movie_records, key=lambda x: x['year'])
+        movies = format_movie_data(sorted_movie_records)
 
     if EXPORT_ALL_DATA:
         path = "contentFeed_exported.json"
