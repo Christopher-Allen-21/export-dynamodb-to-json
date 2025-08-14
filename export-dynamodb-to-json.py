@@ -1,7 +1,7 @@
 import json
 import boto3
 from boto3.dynamodb.conditions import Key
-from datetime import datetime
+from datetime import date, timedelta
 from enum import Enum
 
 
@@ -19,23 +19,43 @@ class SpecialSeason(Enum):
 
 NUMBER_OF_RECENTLY_ADDED_MOVIES = 10
 
-
-# Export Movie and TV Show data to contentFeed_exported.json
-# ENSURE ONLY ONE OF THESE IS SET TO TRUE
-EXPORT_ALL_DATA = True
-
-# Export Movie data to contentFeed_exported_movies.json
-# ENSURE ONLY ONE OF THESE IS SET TO TRUE
-EXPORT_MOVIE_DATA = False
-
-# Export TV Show data to contentFeed_exported_tv_shows.json
-# ENSURE ONLY ONE OF THESE IS SET TO TRUE
-EXPORT_TV_SHOW_DATA = False
-
-# Export Decades data for movies to contentFeed_exported_decades.json
-# ENSURE ONLY ONE OF THESE IS SET TO TRUE
-EXPORT_DECADES_DATA = False
-
+exported_content = [
+    {
+        "name": "all",
+        "path": "contentFeed_exported.json",
+        "include_movies": True,
+        "include_tv_shows": True,
+        "sort_by": "dateAdded"
+    },
+    {
+        "name": "movies",
+        "path": "contentFeed_exported_movies.json",
+        "include_movies": True,
+        "include_tv_shows": False,
+        "sort_by": "dateAdded"
+    },
+    {
+        "name": "tv_shows",
+        "path": "contentFeed_exported_tv_shows.json",
+        "include_movies": False,
+        "include_tv_shows": True,
+        "sort_by": "dateAdded"
+    },
+    {
+        "name": "decades",
+        "path": "contentFeed_exported_decades.json",
+        "include_movies": True,
+        "include_tv_shows": False,
+        "sort_by": "year"
+    },
+    {
+        "name": "trending",
+        "path": "contentFeed_exported_trending.json",
+        "include_movies": True,
+        "include_tv_shows": False,
+        "sort_by": "dateAdded"
+    }
+]
 
 
 s3 = boto3.client('s3')
@@ -48,58 +68,44 @@ episode_table = dynamodb.Table(EPISODE_TABLE)
 def lambda_handler(event, context):
     print("Export started.")
 
-    if EXPORT_ALL_DATA or EXPORT_MOVIE_DATA:
-        movie_records = get_all_dynamo_records(movie_table)
-        sorted_movie_records = sorted(movie_records, key=lambda x: x['dateAdded'])
-        movies = format_movie_data(sorted_movie_records)
+    for content in exported_content:
+        if content['include_movies'] == True:
+            movie_records = get_all_dynamo_records(movie_table)
+            sorted_movie_records = sorted(movie_records, key=lambda x: x[content['sort_by']])
+            movies = format_movie_data(sorted_movie_records, content['name'])
+        if content['include_tv_shows'] == True:
+            tv_show_records = get_all_dynamo_records(tv_show_table)
+            sorted_tv_show_records = sorted(tv_show_records, key=lambda x: x[content['sort_by']])
+            tv_shows = format_tv_show_data(sorted_tv_show_records, content['name'])
 
-    if EXPORT_ALL_DATA or EXPORT_TV_SHOW_DATA:
-        tv_show_records = get_all_dynamo_records(tv_show_table)
-        sorted_tv_show_records = sorted(tv_show_records, key=lambda x: x['dateAdded'])
-        tv_shows = format_tv_show_data(sorted_tv_show_records)
+        path = content['path']
 
-    if EXPORT_DECADES_DATA:
-        movie_records = get_all_dynamo_records(movie_table)
-        sorted_movie_records = sorted(movie_records, key=lambda x: x['year'])
-        movies = format_movie_data(sorted_movie_records)
+        if content['include_movies'] and content['include_tv_shows']:
+            combined_data = {
+                "TV Shows": tv_shows,
+                "Movies": movies
+            }
+        elif content['include_movies']:
+            combined_data = {
+                "Movies": movies
+            }
+        elif content['include_tv_shows']:
+            combined_data = {
+                "TV Shows": tv_shows,
+            }
 
-    if EXPORT_ALL_DATA:
-        path = "contentFeed_exported.json"
-        combined_data = {
-            "TV Shows": tv_shows,
-            "Movies": movies,
-        }
+        s3.put_object(
+            Body=json.dumps(combined_data),
+            Bucket=S3_BUCKET,
+            Key=path
+        )
 
-    if EXPORT_MOVIE_DATA:
-        path = "contentFeed_exported_movies.json"
-        combined_data = {
-            "Movies": movies,
-        }
-
-    if EXPORT_TV_SHOW_DATA:
-        path = "contentFeed_exported_tv_shows.json"
-        combined_data = {
-            "TV Shows": tv_shows,
-        }
-
-    if EXPORT_DECADES_DATA:
-        path = "contentFeed_exported_decades.json"
-        combined_data = {
-            "Movies": movies,
-        }
-        
-    
-    s3.put_object(
-        Body=json.dumps(combined_data),
-        Bucket=S3_BUCKET,
-        Key=path
-    )
+        print(f"Export for {content['name']} completed.")
 
     print("Export completed.")
 
-
-def format_movie_data(movie_dynamo_data):
-    print("Movie formatting started.")  
+def format_movie_data(movie_dynamo_data, name):
+    print(f"Movie formatting for {name} started.")  
     formatted_movie_list = []
 
     formatted_movie_list_length = len(movie_dynamo_data)
@@ -156,8 +162,11 @@ def format_movie_data(movie_dynamo_data):
                 "views": int(movie["views"])
             }
 
-        if EXPORT_DECADES_DATA:
+        if name == 'decades':
            formatted_movie['genres'] = [movie["year"][:3] + "0s"]
+
+        if name == 'trending':
+            formatted_movie['genres'] = get_trending_genres(formatted_movie)
 
         formatted_movie_list.append(formatted_movie)
     
@@ -168,12 +177,12 @@ def format_movie_data(movie_dynamo_data):
             list(reversed(formatted_movie_list[-NUMBER_OF_RECENTLY_ADDED_MOVIES:]))
         )
 
-    print("Movie formatting completed.")   
+    print(f"Movie formatting for {name} completed.")   
     return formatted_movie_list
 
 
-def format_tv_show_data(tv_show_dynamo_data):
-    print("TV Show formatting started.")   
+def format_tv_show_data(tv_show_dynamo_data, name):
+    print(f"TV Show formatting for {name} started.")   
     formatted_tv_show_list = []
 
     for tv_show in tv_show_dynamo_data:
@@ -195,7 +204,7 @@ def format_tv_show_data(tv_show_dynamo_data):
 
         formatted_tv_show_list.append(formatted_tv_show)
 
-    print("TV Show formatting completed.")   
+    print(f"TV Show formatting for {name} completed.")
     return formatted_tv_show_list
 
 
@@ -311,6 +320,22 @@ def special_season_exists(tv_show_name, special_season_type):
         return True
     else:
         return False
+    
+def get_trending_genres(formatted_movie):
+    today = date.today()
+    release_year = int(formatted_movie['releaseDate'])
+    years_ago = today.year - release_year
+
+    if years_ago == 10:
+        return ["10 Year Anniversary"]
+    elif years_ago == 25:
+        return ["25 Year Anniversary"]
+    elif years_ago == 50:
+        return ["50 Year Anniversary"]
+    elif years_ago == 100:
+        return ["100 Year Anniversary"]
+    else:
+        return formatted_movie['genres']
 
 
 def get_all_dynamo_records(table):
