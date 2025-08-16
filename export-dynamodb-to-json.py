@@ -119,6 +119,7 @@ def format_movie_data(movie_dynamo_data, name):
                 "longDescription": movie["description"],
                 "thumbnail": movie["thumbnailUrl"],
                 "releaseDate": movie["year"],
+                "dateAdded": movie["dateAdded"],
                 "rating": movie["rating"],
                 "cast": movie["cast"],
                 "director": movie["director"],
@@ -145,6 +146,7 @@ def format_movie_data(movie_dynamo_data, name):
                 "longDescription": movie["description"],
                 "thumbnail": movie["thumbnailUrl"],
                 "releaseDate": movie["year"],
+                "dateAdded": movie["dateAdded"],
                 "rating": movie["rating"],
                 "cast": movie["cast"],
                 "director": movie["director"],
@@ -238,6 +240,7 @@ def format_episode_data(tv_show_name, number_of_seasons):
         for episode in sorted_episodes:
             formatted_episode = {
                 "title": episode["name"],
+                "tvShowName": tv_show_name,
                 "episodeNumber": int(episode["episode"]),
                 "longDescription": episode["description"],
                 "thumbnail": episode["thumbnailUrl"],
