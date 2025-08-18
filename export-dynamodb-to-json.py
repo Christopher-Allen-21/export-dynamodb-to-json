@@ -1,7 +1,7 @@
 import json
 import boto3
 from boto3.dynamodb.conditions import Key
-from datetime import date, timedelta
+from datetime import date
 from enum import Enum
 
 
@@ -53,7 +53,7 @@ exported_content = [
         "path": "contentFeed_exported_trending.json",
         "include_movies": True,
         "include_tv_shows": False,
-        "sort_by": "dateAdded"
+        "sort_by": "views"
     }
 ]
 
@@ -169,8 +169,18 @@ def format_movie_data(movie_dynamo_data, name):
 
         if name == 'trending':
             formatted_movie['genres'] = get_trending_genres(formatted_movie)
-
+        
         formatted_movie_list.append(formatted_movie)
+
+
+    # Calculate most watched movies
+    most_watched_movies = sorted(formatted_movie_list, key=lambda m: m["views"], reverse=True)[:10]
+
+    for movie in most_watched_movies:
+        # copy to avoid modifying original list reference if needed
+        genres = movie["genres"][:]
+        genres.append("Most Watched - All Time")
+        movie["genres"] = genres
     
     # Reverse the last x items
     if len(formatted_movie_list) >= NUMBER_OF_RECENTLY_ADDED_MOVIES:
@@ -351,8 +361,7 @@ def get_all_dynamo_records(table):
 
 
 def get_dynamo_records_by_pk_and_partial_sk(pk_name, pk_value, sk_name, sk_value, table):
-    # print(f"pk Name: {pk_name}, pk Value: {pk_value}, sk Name: {sk_name}, sk Value: {sk_value}, table: {table}")
     try:
         return table.query(KeyConditionExpression=Key(pk_name).eq(pk_value) & Key(sk_name).begins_with(sk_value))["Items"]
     except Exception as ex:
-        print(f"Error retrieving records with primary key {pk_value} and sort key {sk_value} from table {table}. Exception: {ex}")
+        print(f"Error retrieving records with partition key {pk_value} and sort key {sk_value} from table {table}. Exception: {ex}")
