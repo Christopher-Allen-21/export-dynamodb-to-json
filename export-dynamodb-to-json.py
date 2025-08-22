@@ -168,28 +168,31 @@ def format_movie_data(movie_dynamo_data, name):
            formatted_movie['genres'] = [movie["year"][:3] + "0s"]
 
         if name == 'trending':
+            # Getting the anniversary year genres
             formatted_movie['genres'] = get_trending_genres(formatted_movie)
         
         formatted_movie_list.append(formatted_movie)
 
 
-    # Calculate most watched movies
-    most_watched_movies = sorted(formatted_movie_list, key=lambda m: m["views"], reverse=True)[:10]
+    if name == 'trending':
+        # --- Tag top 10 as "Most Watched - All Time" ---
+        most_watched_movies = sorted(formatted_movie_list, key=lambda m: m["views"], reverse=True)[:10]
+        for movie in most_watched_movies:
+            genres = movie["genres"][:]
+            genres.append("Most Watched - All Time")
+            movie["genres"] = genres
 
-    for movie in most_watched_movies:
-        # copy to avoid modifying original list reference if needed
-        genres = movie["genres"][:]
-        genres.append("Most Watched - All Time")
-        movie["genres"] = genres
-    
-    # Reverse the last x items
+        # --- Sort the entire list by views (highest → lowest) ---
+        formatted_movie_list = sorted(formatted_movie_list, key=lambda m: m["views"], reverse=True)
+
+    # --- Reverse the last x items for Recently Added ---
     if len(formatted_movie_list) >= NUMBER_OF_RECENTLY_ADDED_MOVIES:
         formatted_movie_list = (
             formatted_movie_list[:-NUMBER_OF_RECENTLY_ADDED_MOVIES] +
             list(reversed(formatted_movie_list[-NUMBER_OF_RECENTLY_ADDED_MOVIES:]))
         )
 
-    print(f"Movie formatting for {name} completed.")   
+    print(f"Movie formatting for {name} completed.")  
     return formatted_movie_list
 
 
