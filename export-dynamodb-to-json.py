@@ -49,6 +49,13 @@ exported_content = [
         "sort_by": "year"
     },
     {
+        "name": "directors",
+        "path": "contentFeed_exported_directors.json",
+        "include_movies": True,
+        "include_tv_shows": False,
+        "sort_by": "year"
+    },
+    {
         "name": "trending",
         "path": "contentFeed_exported_trending.json",
         "include_movies": True,
@@ -170,6 +177,9 @@ def format_movie_data(movie_dynamo_data, name):
         if name == 'trending':
             # Getting the anniversary year genres
             formatted_movie['genres'] = get_trending_genres(formatted_movie)
+        
+        if name == 'directors':
+            formatted_movie['genres'] = [movie["director"]]
         
         formatted_movie_list.append(formatted_movie)
 
@@ -354,6 +364,8 @@ def get_trending_genres(formatted_movie):
         return formatted_movie['genres']
 
 
+
+# AWS Service Functions
 def get_all_dynamo_records(table):
     try:
         records = table.scan()
