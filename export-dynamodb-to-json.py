@@ -61,6 +61,13 @@ exported_content = [
         "include_movies": True,
         "include_tv_shows": False,
         "sort_by": "views"
+    },
+    {
+        "name": "studio",
+        "path": "contentFeed_exported_studio.json",
+        "include_movies": False,
+        "include_tv_shows": True,
+        "sort_by": "year"
     }
 ]
 
