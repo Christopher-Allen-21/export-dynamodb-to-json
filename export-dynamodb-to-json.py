@@ -1,7 +1,7 @@
 from collections import Counter
 import json
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from datetime import date
 from enum import Enum
 
@@ -195,34 +195,33 @@ def format_movie_data(movie_dynamo_data, name):
 
 
     if name == 'trending':
-        # --- Tag top 10 as "Most Watched - All Time" ---
-        # most_watched_movies = sorted(formatted_movie_list, key=lambda m: m["views"], reverse=True)[:10]
-        # for movie in most_watched_movies:
-        #     genres = movie["genres"][:]
-        #     genres.append("Most Watched - All Time")
-        #     movie["genres"] = genres
-
-        response = views_table.scan()
+        # Getting the most watched movies (excluding TV Shows from views table)
+        response = views_table.scan(
+            FilterExpression=Attr("episodename").not_exists()
+        )
         items = response.get("Items", [])
 
+        # Continue scan if there are multiple pages
         while "LastEvaluatedKey" in response:
-            response = views_table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+            response = views_table.scan(
+                ExclusiveStartKey=response["LastEvaluatedKey"],
+                FilterExpression=Attr("episodename").not_exists()
+            )
             items.extend(response.get("Items", []))
 
-        # Top 10 most common
-        top_10 = Counter(item["name"] for item in items).most_common(10)
-        print(top_10)
-        for title, _ in top_10:
-            most_watched_movies = [movie for movie in formatted_movie_list if movie["title"] == title]
+        top_10_movie_titles = Counter(item["name"] for item in items).most_common(10)
 
-        print(most_watched_movies)
+        most_watched_movies = []
+        for title, _ in top_10_movie_titles:
+            most_watched_movies.extend(
+                [movie for movie in formatted_movie_list if movie["title"] == title]
+            )
 
         for movie in most_watched_movies:
             genres = movie["genres"][:]
             genres.append("Most Watched - All Time")
             movie["genres"] = genres
 
-        # --- Sort the entire list by views (highest → lowest) ---
         formatted_movie_list = sorted(formatted_movie_list, key=lambda m: m["views"], reverse=True)
 
     # --- Reverse the last x items for Recently Added ---
