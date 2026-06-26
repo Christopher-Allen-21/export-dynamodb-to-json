@@ -387,6 +387,8 @@ def get_trending_genres(formatted_movie):
         return ["25 Year Anniversary"]
     elif years_ago == 50:
         return ["50 Year Anniversary"]
+    elif years_ago == 75:
+        return ["75 Year Anniversary"]
     elif years_ago == 100:
         return ["100 Year Anniversary"]
     elif years_ago == 150:
