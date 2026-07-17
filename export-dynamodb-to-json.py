@@ -62,7 +62,7 @@ exported_content = [
         "path": "contentFeed_exported_trending.json",
         "include_movies": True,
         "include_tv_shows": False,
-        "sort_by": "views"
+        "sort_by": "year"
     },
     {
         "name": "studio",
