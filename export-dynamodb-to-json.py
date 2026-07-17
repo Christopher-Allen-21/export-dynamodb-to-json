@@ -210,29 +210,39 @@ def format_movie_data(movie_dynamo_data, name):
             items.extend(response.get("Items", []))
 
         top_10_movie_titles = Counter(item["name"] for item in items).most_common(10)
+        top_titles = {title for title, _ in top_10_movie_titles}
 
-        most_watched_movies = []
-        for title, _ in top_10_movie_titles:
-            most_watched_movies.extend(
-                [movie for movie in formatted_movie_list if movie["title"] == title]
-            )
+        # Add the "Most Watched - All Time" genre
+        for movie in formatted_movie_list:
+            if movie["title"] in top_titles:
+                genres = movie["genres"][:]
+                genres.append("Most Watched - All Time")
+                movie["genres"] = genres
 
-        for movie in most_watched_movies:
-            genres = movie["genres"][:]
-            genres.append("Most Watched - All Time")
-            movie["genres"] = genres
-
-        formatted_movie_list = sorted(formatted_movie_list, key=lambda m: m["views"], reverse=True)
-
-    # --- Reverse the last x items for Recently Added ---
-    if len(formatted_movie_list) >= NUMBER_OF_RECENTLY_ADDED_MOVIES:
-        formatted_movie_list = (
-            formatted_movie_list[:-NUMBER_OF_RECENTLY_ADDED_MOVIES] +
-            list(reversed(formatted_movie_list[-NUMBER_OF_RECENTLY_ADDED_MOVIES:]))
+        # Only sort the Most Watched movies by views
+        most_watched_movies = sorted(
+            [m for m in formatted_movie_list if "Most Watched - All Time" in m["genres"]],
+            key=lambda m: m["views"],
+            reverse=False
         )
 
-    print(f"Movie formatting for {name} completed.")  
-    return formatted_movie_list
+        other_movies = [
+            m for m in formatted_movie_list
+            if "Most Watched - All Time" not in m["genres"]
+        ]
+
+        # Preserve the original ordering of every other row
+        formatted_movie_list = other_movies + most_watched_movies
+
+        # --- Reverse the last x items for Recently Added ---
+        if len(formatted_movie_list) >= NUMBER_OF_RECENTLY_ADDED_MOVIES:
+            formatted_movie_list = (
+                formatted_movie_list[:-NUMBER_OF_RECENTLY_ADDED_MOVIES] +
+                list(reversed(formatted_movie_list[-NUMBER_OF_RECENTLY_ADDED_MOVIES:]))
+            )
+
+        print(f"Movie formatting for {name} completed.")  
+        return formatted_movie_list
 
 
 def format_tv_show_data(tv_show_dynamo_data, name):
