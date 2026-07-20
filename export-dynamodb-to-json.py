@@ -83,7 +83,7 @@ views_table = dynamodb.Table(VIEWS_TABLE)
 
 
 def lambda_handler(event, context):
-    print("Export started.")
+    print("Starting export from DynamoDb to exported json file.")
 
     for content in exported_content:
         if content['include_movies'] == True:
@@ -120,6 +120,7 @@ def lambda_handler(event, context):
         print(f"Export for {content['name']} completed.")
 
     print("Export completed.")
+
 
 def format_movie_data(movie_dynamo_data, name):
     print(f"Movie formatting for {name} started.")  
@@ -233,6 +234,7 @@ def format_movie_data(movie_dynamo_data, name):
 
         # Preserve the original ordering of every other row
         formatted_movie_list = other_movies + most_watched_movies
+
 
     # --- Reverse the last x items for Recently Added ---
     if len(formatted_movie_list) >= NUMBER_OF_RECENTLY_ADDED_MOVIES:
@@ -386,6 +388,7 @@ def special_season_exists(tv_show_name, special_season_type):
     else:
         return False
     
+
 def get_trending_genres(formatted_movie):
     today = date.today()
     release_year = int(formatted_movie['releaseDate'])
@@ -413,7 +416,6 @@ def get_trending_genres(formatted_movie):
         return ["1000 Year Anniversary!!!!!"]
     else:
         return formatted_movie['genres']
-
 
 
 # AWS Service Functions
