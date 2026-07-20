@@ -234,15 +234,15 @@ def format_movie_data(movie_dynamo_data, name):
         # Preserve the original ordering of every other row
         formatted_movie_list = other_movies + most_watched_movies
 
-        # --- Reverse the last x items for Recently Added ---
-        if len(formatted_movie_list) >= NUMBER_OF_RECENTLY_ADDED_MOVIES:
-            formatted_movie_list = (
-                formatted_movie_list[:-NUMBER_OF_RECENTLY_ADDED_MOVIES] +
-                list(reversed(formatted_movie_list[-NUMBER_OF_RECENTLY_ADDED_MOVIES:]))
-            )
+    # --- Reverse the last x items for Recently Added ---
+    if len(formatted_movie_list) >= NUMBER_OF_RECENTLY_ADDED_MOVIES:
+        formatted_movie_list = (
+            formatted_movie_list[:-NUMBER_OF_RECENTLY_ADDED_MOVIES] +
+            list(reversed(formatted_movie_list[-NUMBER_OF_RECENTLY_ADDED_MOVIES:]))
+        )
 
-        print(f"Movie formatting for {name} completed.")  
-        return formatted_movie_list
+    print(f"Movie formatting for {name} completed.")  
+    return formatted_movie_list
 
 
 def format_tv_show_data(tv_show_dynamo_data, name):
