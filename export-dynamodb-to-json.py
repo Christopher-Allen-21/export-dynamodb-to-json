@@ -391,31 +391,33 @@ def special_season_exists(tv_show_name, special_season_type):
 
 def get_trending_genres(formatted_movie):
     today = date.today()
-    release_year = int(formatted_movie['releaseDate'])
+    release_year = int(formatted_movie["releaseDate"])
     years_ago = today.year - release_year
 
+    genres = formatted_movie["genres"][:]  # Copy existing genres
+
     if years_ago == 10:
-        return ["10 Year Anniversary"]
+        genres.append("10 Year Anniversary")
     elif years_ago == 25:
-        return ["25 Year Anniversary"]
+        genres.append("25 Year Anniversary")
     elif years_ago == 50:
-        return ["50 Year Anniversary"]
+        genres.append("50 Year Anniversary")
     elif years_ago == 75:
-        return ["75 Year Anniversary"]
+        genres.append("75 Year Anniversary")
     elif years_ago == 100:
-        return ["100 Year Anniversary"]
+        genres.append("100 Year Anniversary")
     elif years_ago == 150:
-        return ["150 Year Anniversary"]
+        genres.append("150 Year Anniversary")
     elif years_ago == 200:
-        return ["200 Year Anniversary"]
+        genres.append("200 Year Anniversary")
     elif years_ago == 250:
-        return ["250 Year Anniversary"]
+        genres.append("250 Year Anniversary")
     elif years_ago == 500:
-        return ["500 Year Anniversary"]
+        genres.append("500 Year Anniversary")
     elif years_ago == 1000:
-        return ["1000 Year Anniversary!!!!!"]
-    else:
-        return formatted_movie['genres']
+        genres.append("1000 Year Anniversary!!!!!")
+
+    return genres
 
 
 # AWS Service Functions
