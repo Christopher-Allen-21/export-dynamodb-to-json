@@ -424,7 +424,13 @@ def get_trending_genres(formatted_movie):
 def get_all_dynamo_records(table):
     try:
         records = table.scan()
-        return records["Items"]
+        items = records["Items"]
+
+        while "LastEvaluatedKey" in records:
+            records = table.scan(ExclusiveStartKey=records["LastEvaluatedKey"])
+            items.extend(records["Items"])
+
+        return items
     except Exception as ex:
         print(f"Error retrieving all records from table {table}. Exception: {ex}")
         raise
