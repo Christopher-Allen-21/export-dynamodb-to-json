@@ -190,7 +190,7 @@ def format_movie_data(movie_dynamo_data, name):
             formatted_movie['genres'] = get_trending_genres(formatted_movie)
         
         if name == 'directors':
-            formatted_movie['genres'] = [movie["director"]]
+            formatted_movie['genres'] = get_director_genre(movie["director"])
         
         formatted_movie_list.append(formatted_movie)
 
@@ -418,6 +418,13 @@ def get_trending_genres(formatted_movie):
         genres.append("1000 Year Anniversary!!!!!")
 
     return genres
+
+
+def get_director_genre(director):
+    if "Joel Coen" in director or "Ethan Coen" in director:
+        return ["Coen Brothers"]
+    else:
+        return [director]
 
 
 # AWS Service Functions
