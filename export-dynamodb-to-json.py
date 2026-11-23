@@ -182,10 +182,6 @@ def format_movie_data(movie_dynamo_data, name):
                 "views": int(movie["views"])
             }
 
-        # Add the "Featured" genre for movies released this year
-        if int(formatted_movie["releaseDate"]) == date.today().year:
-            formatted_movie['genres'] = formatted_movie['genres'] + ["Featured"]
-
         if name == 'decades':
            formatted_movie['genres'] = [movie["year"][:3] + "0s"]
 
